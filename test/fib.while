@@ -1,0 +1,9 @@
+begin {
+      var i = 1;
+      var n = 5;
+      while n >= 1 do {
+          i := n * i;
+          n := n - 1;
+      };
+      print i;
+}
