@@ -54,7 +54,6 @@ block:
 seq_var:
   /* empty */                       { [] }
 | decl_var seq_var                  { $1::$2 }
-| decl_var                          { [$1] }
 
 decl_var:
   VAR IDENT EQ exp SEMI             { mkvar_decl $2 $4 }
@@ -62,14 +61,16 @@ decl_var:
 seq_decl:
   /* empty */                       { [] }
 | decl seq_decl                     { $1 :: $2 }
-| decl                              { [$1] }
 
 decl:
-| IF exp THEN block SEMI { If ($2, $4, None) }
-| IF exp THEN block ELSE block SEMI { If ($2, $4, Some $6) }
+| IF exp THEN block if_continue     { If ($2, $4, $5) }
 | ident ASSIGN exp SEMI             { Assign ($1, $3) }
-| WHILE exp DO block SEMI      { While ($2, $4) }
+| WHILE exp DO block SEMI           { While ($2, $4) }
 | PRINT exp SEMI                    { Print $2 }
+
+if_continue:
+  /* empty */                       { None }
+| ELSE block                        { Some $2}
 
 exp:
   ident                             { $1 }
