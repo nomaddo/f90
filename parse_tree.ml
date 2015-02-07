@@ -1,12 +1,18 @@
-type expr =
+type block =
+  {var_decls:  var_decl list; decls: decl list}
+
+and var_decl =
+  {name: string; initialize: expr}
+
+and decl =
+  | While   of expr * block
+  | If      of expr * block * block option
+  | Assign  of expr * expr
+  | Print   of expr
+
+and expr =
   | Const   of const
   | Ident   of string
-  | While   of expr * expr
-  | If      of expr * expr * expr
-  | Assign  of expr * expr
-  | Seq     of expr * expr
-  | Print   of expr
-  | Var     of expr * expr
   | Plus    of expr * expr
   | Minus   of expr * expr
   | Mul     of expr * expr
