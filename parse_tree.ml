@@ -1,5 +1,5 @@
 type block =
-  {var_decls:  var_decl list; decls: decl list}
+  {var_decls: var_decl list; decls: decl list}
 
 and var_decl =
   {name: string; initialize: expr}
@@ -22,8 +22,8 @@ and expr =
   | Not     of expr
   | Leq     of expr * expr
   | Less    of expr * expr
-  | Geq     of expr * expr
-  | Greater of expr * expr
 
 and const =
-  | Int of int
+  | Int     of int
+  | Bool    of int
+  | Char    of int

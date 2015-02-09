@@ -81,8 +81,8 @@ exp:
 
 comp:
 | exp EQ exp                        { Eq ($1, $3) }
-| exp GREATER exp                   { Greater ($1, $3) }
-| exp GEQ exp                       { Geq ($1, $3) }
+| exp GREATER exp                   { Less ($3, $1) }
+| exp GEQ exp                       { Leq ($3, $1) }
 | exp LESS exp                      { Less ($1, $3) }
 | exp LEQ exp                       { Leq ($1, $3) }
 | exp NEQ exp                       { Neq ($1, $3) }
