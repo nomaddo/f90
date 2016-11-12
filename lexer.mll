@@ -15,8 +15,10 @@ let keyword_table =
     "while", WHILE;
     "do", DO;
     "print", PRINT;
-    "var", VAR;
-    "begin", BEGIN
+    "program", PROGRAM;
+    "end", END;
+    "dimension", DIMENSION;
+    "pointer", POINTER;
   ]
 
 let loc = ref (-1, -1, -1)
@@ -65,11 +67,12 @@ rule token = parse
 | '('               { update lexbuf; LPAREN }
 | ')'               { update lexbuf; RPAREN }
 | '='               { update lexbuf; EQ }
-| ":="              { update lexbuf; ASSIGN }
+| "::"              { update lexbuf; COLCOL }
 | "!="              { update lexbuf; NEQ }
 | "<="              { update lexbuf; LEQ }
 | ">="              { update lexbuf; GEQ }
-| ';'               { update lexbuf; SEMI }
+| ','               { update lexbuf; COMMA }
+| ':'               { update lexbuf; COLON }
 | '<'               { update lexbuf; LESS }
 | '>'               { update lexbuf; GREATER }
 | '{'               { update lexbuf; LBRACE }

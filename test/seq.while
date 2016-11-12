@@ -1,6 +1,0 @@
-begin {
-  print 12;
-  print 12;
-  print 12;
-  print 1; 2; 3
-  }
