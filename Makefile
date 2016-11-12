@@ -17,10 +17,13 @@ clean:
 	rm -rf *.cm? parser.ml lexer.ml
 
 
+parser.cmo: parser.ml
+	ocamlc -c $<
+
 %.cmo: %.ml
-	${OCAMLC} ${LIB} $<
+	${OCAMLC} -c ${LIB} $<
 %.cmx: %.ml
-	${OCAMLOPT} ${LIB} $<
+	${OCAMLOPT} -c ${LIB} $<
 %.ml: %.mll
 	ocamllex $<
 %.ml: %.mly
