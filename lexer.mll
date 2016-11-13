@@ -19,6 +19,8 @@ let keyword_table =
     "end", END;
     "dimension", DIMENSION;
     "pointer", POINTER;
+    "real", REAL;
+    "integer", INTEGER;
   ]
 
 let loc = ref (-1, -1, -1)
