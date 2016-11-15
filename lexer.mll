@@ -27,9 +27,11 @@ let keyword_table =
     "case", CASE;
     "select", SELECT;
     "do", DO;
-    "print", PRINT;
     "program", PROGRAM;
     "end", END;
+    "contains", CONTAINS;
+    "subroutine", SUBROUTINE;
+    "function", FUNCTION;
     "dimension", DIMENSION;
     "pointer", POINTER;
     "parameter", PARAMETER;

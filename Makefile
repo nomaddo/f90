@@ -11,6 +11,9 @@ calc: ${OBJS}
 
 all: clean calc test
 
+depend:
+	ocamlfind ocamldep *.ml > .depend
+
 test:
 	for file in `find test -name *.f90 | sort`; do \
 	echo $${file} ":"; \
@@ -38,3 +41,5 @@ parser.mli: parser.mly
 	menhir -v $<
 
 .PHONY: clean test
+
+include .depend

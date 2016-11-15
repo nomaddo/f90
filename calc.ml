@@ -4,7 +4,7 @@ let _ =
     let lexbuf = Lexing.from_channel (open_in Sys.argv.(1)) in
     try
       let result = Parser.main Lexer.token lexbuf in
-      Parse_tree.sexp_of_block Sexplib.Std.sexp_of_unit result
+      Parse_tree.sexp_of_main Sexplib.Std.sexp_of_unit result
       |> Sexplib.Sexp.output stdout;
       print_endline "";
       flush stdout;

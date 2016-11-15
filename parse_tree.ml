@@ -1,6 +1,22 @@
 open Sexplib.Std
 
-type 'a block =
+type 'a main =
+  {program: 'a block; subprograms: 'a sub list}
+
+and 'a sub =
+  {sub_subprogram: 'a sub_desc; sub_loc: Location.t}
+
+and 'a sub_desc =
+  | Subroutine of 'a subroutine
+  | Function   of 'a func
+
+and 'a subroutine =
+  {sub_name: string; sub_args: string list; sub_decls: 'a decl list}
+
+and 'a func =
+  {func_name:string; func_args: string list; func_decls: 'a decl list}
+
+and 'a block =
   {vardecls: 'a vardecl list; decls: 'a decl list}
 
 and 'a vardecl =
@@ -44,12 +60,14 @@ and 'a decl_desc =
   | Assign  of string * 'a expr
   | Do      of string * 'a expr * 'a expr * 'a expr option * 'a decl list
   | Select  of 'a select
+  | Call    of string * 'a expr list
 
 and 'a expr =
   {expr_desc: 'a expr_desc; expr_loc: Location.t; expr_typ: 'a}
 
 and 'a expr_desc =
   | Const   of const
+  | Funcall of string * 'a expr list
   | Ident   of string
   | Rev     of 'a expr
   | Plus    of 'a expr * 'a expr
@@ -74,12 +92,15 @@ and const_desc =
   | Cint  of int
   | Creal of string
   | Cbool of bool
-[@@deriving sexp]
 
 and 'a case =
-    { case_range: 'a range;
+    { case_option: 'a case_option list; (* [] means DEFAULT *)
       case_decls: 'a decl list;
       case_loc: Location.t }
+
+and 'a case_option =
+  | Range of 'a range
+  | Scala of 'a expr
 
 and 'a range =
     { range_left:  'a expr option;
@@ -90,3 +111,4 @@ and 'a select =
     { select_expr: 'a expr;
       select_cases: 'a case list;
       select_loc: Location.t }
+[@@deriving sexp]

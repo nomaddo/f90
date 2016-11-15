@@ -31,17 +31,27 @@ let mkdecl ~loc dec =
 let mkrange ~loc range_left range_right =
   { range_left; range_right; range_loc = loc}
 
-let mkcase ~loc case_range  case_decls =
-  { case_range; case_decls; case_loc = loc }
+let mkcase ~loc case_option  case_decls =
+  { case_option ; case_decls; case_loc = loc }
 
 let mkselect ~loc select_expr select_cases =
   { select_expr; select_cases; select_loc = loc }
+
+let mksub ~loc sub =
+  { sub_subprogram = sub; sub_loc = loc }
+
+let mksubroutine ~loc ident args decls =
+  { sub_name = ident; sub_args = args; sub_decls = decls }
+
+let mkfunc ~loc ident args decls =
+  { func_name = ident; func_args = args; func_decls = decls }
+
 %}
 
 %token <int> INT
 %token <string> FLOAT
 %token TRUE FALSE
-%token PROGRAM
+%token PROGRAM CONTAINS
 %token DIMENSION POINTER ALLOCATABLE PARAMETER
 %token PLUS MINUS MUL DIV
 %token NOT AND OR EQ NEQ
@@ -52,12 +62,13 @@ let mkselect ~loc select_expr select_cases =
 %token COMMA COLON
 %token COLCOL
 %token IF THEN ELSE
-%token PRINT
+%token CALL
 %token VAR EQV NEQV
 %token GREATER LESS GEQ LEQ
 %token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
 %token LBRACE RBRACE
-%token SELECT CASE
+%token SELECT CASE DEFAULT
+%token SUBROUTINE FUNCTION
 
 %left PLUS MINUS        /* lowest precedence */
 %left MUL DIV           /* medium precedence */
@@ -68,13 +79,34 @@ let mkselect ~loc select_expr select_cases =
 %nonassoc IDENT INT FLOAT
 
 %start main             /* the entry point */
-%type <unit Parse_tree.block> main
+%type <unit Parse_tree.main> main
 
 %%
 
 main:
-  PROGRAM IDENT top_block END PROGRAM IDENT EOF
-  { assert ($2 = $6); $3 }
+| PROGRAM IDENT top_block CONTAINS seq_subprogram END PROGRAM ident_or_blank EOF
+  { assert ($2 = $8); {program = $3; subprograms = $5} }
+| PROGRAM IDENT top_block END PROGRAM IDENT EOF
+  { assert ($2 = $6); {program = $3; subprograms = []} }
+
+ident_or_blank:
+| /* empty */    { "empty" }
+| IDENT          { $1 }
+
+seq_subprogram:
+| /* empty */       { [] }
+| subprogram seq_subprogram { $1 :: $2 }
+
+subprogram:
+| SUBROUTINE IDENT LPAREN seq_ident RPAREN seq_decl END SUBROUTINE ident_or_blank
+  { mksub ~loc:(mkloc ()) (Subroutine (mksubroutine ~loc:(mkloc ()) $2 $4 $6)) }
+| FUNCTION IDENT LPAREN seq_ident RPAREN seq_decl END FUNCTION ident_or_blank
+  { mksub ~loc:(mkloc ()) (Function (mkfunc ~loc:(mkloc ()) $2 $4 $6)) }
+
+seq_ident:
+| /* empty */           { [] }
+| IDENT COMMA seq_ident { $1 :: $3 }
+| IDENT                 { [$1] }
 
 top_block:
   seq_var seq_decl                  { mkblock $1 $2 }
@@ -122,22 +154,39 @@ seq_decl:
 | decl seq_decl                     { $1 :: $2 }
 
 seq_exp:
-  /* empty */ { [] }
-| exp seq_exp  { $1 :: $2 }
+  /* empty */        { [] }
+| exp                { [$1] }
+| exp COMMA seq_exp  { $1 :: $3 }
 
 seq_case:
 | /* empty */   { [] }
 | case seq_case { $1 :: $2 }
 
 case:
-| CASE LPAREN range RPAREN seq_decl { mkcase ~loc:(mkloc ()) $3 $5 }
+| CASE LPAREN seq_case_opt RPAREN seq_decl
+  { mkcase ~loc:(mkloc ()) $3 $5 }
+| CASE DEFAULT seq_decl
+  { mkcase ~loc:(mkloc ()) [] $3 }
+
+seq_case_opt:
+| case_opt                    { [$1]     }
+| case_opt COMMA seq_case_opt { $1 :: $3 }
+
+case_opt:
+| range         { Range $1 }
+| simple_exp    { Scala $1 }
 
 range:
-| exp COLON exp { mkrange ~loc:(mkloc ()) (Some $1) (Some $3) }
-| COLON exp     { mkrange ~loc:(mkloc ()) None      (Some $2) }
-| exp COLON     { mkrange ~loc:(mkloc ()) (Some $1) None      }
+| simple_exp COLON simple_exp
+  { mkrange ~loc:(mkloc ()) (Some $1) (Some $3) }
+| COLON simple_exp
+  { mkrange ~loc:(mkloc ()) None      (Some $2) }
+| simple_exp COLON
+  { mkrange ~loc:(mkloc ()) (Some $1) None      }
 
 decl:
+| CALL IDENT LPAREN seq_exp RPAREN
+  { mkdecl ~loc:(mkloc ()) (Call ($2, $4)) }
 | IDENT EQ exp
   { mkdecl ~loc:(mkloc ()) (Assign ($1, $3)) }
 | DO IDENT EQ exp COMMA exp COMMA exp seq_decl END DO
@@ -146,13 +195,11 @@ decl:
   { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, None, $7))}
 | DO WHILE LPAREN exp RPAREN seq_decl END DO
   { mkdecl ~loc:(mkloc ()) (While ($4, $6))}
-| SELECT CASE LPAREN exp RPAREN seq_case END SELECT
+| SELECT CASE LPAREN exp RPAREN seq_case END SELECT ident_or_blank
   { mkdecl ~loc:(mkloc ()) (Select (mkselect ~loc:(mkloc ()) $4 $6)) }
 
 exp:
-| const { mkexp ~loc:(mkloc ()) (Const $1) }
-| IDENT
-  { mkexp ~loc:(mkloc ()) (Ident $1) }
+| simple_exp { $1 }
 | MINUS exp
   { mkexp ~loc:(mkloc ()) (Rev $2) }
 | arith
@@ -163,6 +210,14 @@ exp:
   { mkexp ~loc:(mkloc ()) $1 }
 | LPAREN exp RPAREN
   { $2 }
+| IDENT LPAREN seq_exp RPAREN
+  { mkexp ~loc:(mkloc ()) (Funcall ($1, $3)) }
+
+simple_exp:
+| const
+  { mkexp ~loc:(mkloc ()) (Const $1) }
+| IDENT
+  { mkexp ~loc:(mkloc ()) (Ident $1) }
 
 const:
 | TRUE
@@ -173,7 +228,6 @@ const:
   { mkconst ~loc:(mkloc ()) (Cint $1) }
 | FLOAT
   { mkconst ~loc:(mkloc ()) (Creal $1) }
-
 
 logical:
 | NOT exp      { Not $2        }
