@@ -68,7 +68,9 @@ let mkfunc ~loc ident args decls =
 %token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
 %token LBRACE RBRACE
 %token SELECT CASE DEFAULT
-%token SUBROUTINE FUNCTION
+%token SUBROUTINE
+%token FUNCTION RETURN
+%token BR GO TO GOTO
 
 %left PLUS MINUS        /* lowest precedence */
 %left MUL DIV           /* medium precedence */
@@ -83,11 +85,16 @@ let mkfunc ~loc ident args decls =
 
 %%
 
+eof:
+| BR eof      { () }
+| EOF         { () }
+
+
 main:
-| PROGRAM IDENT top_block CONTAINS seq_subprogram END PROGRAM ident_or_blank EOF
-  { assert ($2 = $8); {program = $3; subprograms = $5} }
-| PROGRAM IDENT top_block END PROGRAM IDENT EOF
-  { assert ($2 = $6); {program = $3; subprograms = []} }
+| PROGRAM IDENT BR top_block CONTAINS BR seq_subprogram END PROGRAM ident_or_blank eof
+  { {program = $4; subprograms = $7} }
+| PROGRAM IDENT BR top_block END PROGRAM ident_or_blank eof
+  { {program = $4; subprograms = []} }
 
 ident_or_blank:
 | /* empty */    { "empty" }
@@ -98,10 +105,10 @@ seq_subprogram:
 | subprogram seq_subprogram { $1 :: $2 }
 
 subprogram:
-| SUBROUTINE IDENT LPAREN seq_ident RPAREN seq_decl END SUBROUTINE ident_or_blank
-  { mksub ~loc:(mkloc ()) (Subroutine (mksubroutine ~loc:(mkloc ()) $2 $4 $6)) }
-| FUNCTION IDENT LPAREN seq_ident RPAREN seq_decl END FUNCTION ident_or_blank
-  { mksub ~loc:(mkloc ()) (Function (mkfunc ~loc:(mkloc ()) $2 $4 $6)) }
+| SUBROUTINE IDENT LPAREN seq_ident RPAREN BR seq_decl END SUBROUTINE ident_or_blank BR
+  { mksub ~loc:(mkloc ()) (Subroutine (mksubroutine ~loc:(mkloc ()) $2 $4 $7)) }
+| FUNCTION IDENT LPAREN seq_ident RPAREN BR seq_decl END FUNCTION ident_or_blank BR
+  { mksub ~loc:(mkloc ()) (Function (mkfunc ~loc:(mkloc ()) $2 $4 $7)) }
 
 seq_ident:
 | /* empty */           { [] }
@@ -116,9 +123,9 @@ seq_var:
 | decl_var seq_var                  { $1 :: $2 }
 
 decl_var:
-  typ opt_kind COLCOL IDENT EQ exp   { mkvar_decl $1 $4 ~kind:$2 ~init:$6 }
-| typ opt_kind COLCOL IDENT          { mkvar_decl $1 $4 ~kind:$2 }
-| typ IDENT                          { mkvar_decl $1 $2 }
+| typ opt_kind COLCOL IDENT EQ exp BR { mkvar_decl $1 $4 ~kind:$2 ~init:$6 }
+| typ opt_kind COLCOL IDENT        BR { mkvar_decl $1 $4 ~kind:$2 }
+| typ IDENT                        BR { mkvar_decl $1 $2 }
 
 typ:
   INTEGER                            { mktyp ~loc:(mkloc ()) Tinteger }
@@ -163,10 +170,10 @@ seq_case:
 | case seq_case { $1 :: $2 }
 
 case:
-| CASE LPAREN seq_case_opt RPAREN seq_decl
-  { mkcase ~loc:(mkloc ()) $3 $5 }
-| CASE DEFAULT seq_decl
-  { mkcase ~loc:(mkloc ()) [] $3 }
+| CASE LPAREN seq_case_opt RPAREN BR seq_decl
+  { mkcase ~loc:(mkloc ()) $3 $6 }
+| CASE DEFAULT BR seq_decl
+  { mkcase ~loc:(mkloc ()) [] $4 }
 
 seq_case_opt:
 | case_opt                    { [$1]     }
@@ -185,18 +192,26 @@ range:
   { mkrange ~loc:(mkloc ()) (Some $1) None      }
 
 decl:
-| CALL IDENT LPAREN seq_exp RPAREN
+| CALL IDENT LPAREN seq_exp RPAREN BR
   { mkdecl ~loc:(mkloc ()) (Call ($2, $4)) }
-| IDENT EQ exp
+| IDENT EQ exp BR
   { mkdecl ~loc:(mkloc ()) (Assign ($1, $3)) }
-| DO IDENT EQ exp COMMA exp COMMA exp seq_decl END DO
-  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, Some $8, $9))}
-| DO IDENT EQ exp COMMA exp seq_decl END DO
-  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, None, $7))}
-| DO WHILE LPAREN exp RPAREN seq_decl END DO
-  { mkdecl ~loc:(mkloc ()) (While ($4, $6))}
-| SELECT CASE LPAREN exp RPAREN seq_case END SELECT ident_or_blank
-  { mkdecl ~loc:(mkloc ()) (Select (mkselect ~loc:(mkloc ()) $4 $6)) }
+| DO IDENT EQ exp COMMA exp COMMA exp BR seq_decl END DO BR
+  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, Some $8, $10))}
+| DO IDENT EQ exp COMMA exp BR seq_decl END DO BR
+  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, None, $8))}
+| DO WHILE LPAREN exp RPAREN BR seq_decl END DO BR
+  { mkdecl ~loc:(mkloc ()) (While ($4, $7))}
+| SELECT CASE LPAREN exp RPAREN BR seq_case END SELECT ident_or_blank BR
+  { mkdecl ~loc:(mkloc ()) (Select (mkselect ~loc:(mkloc ()) $4 $7)) }
+| RETURN exp BR
+  { mkdecl ~loc:(mkloc ()) (Return $2)}
+| INT decl
+  { mkdecl ~loc:(mkloc ()) (Label ($1, $2))}
+| GO TO INT BR
+  { mkdecl ~loc:(mkloc ()) (Goto $3)}
+| GOTO INT BR
+  { mkdecl ~loc:(mkloc ()) (Goto $2)}
 
 exp:
 | simple_exp { $1 }

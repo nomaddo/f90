@@ -61,6 +61,9 @@ and 'a decl_desc =
   | Do      of string * 'a expr * 'a expr * 'a expr option * 'a decl list
   | Select  of 'a select
   | Call    of string * 'a expr list
+  | Return  of 'a expr
+  | Label   of int * 'a decl
+  | Goto    of int
 
 and 'a expr =
   {expr_desc: 'a expr_desc; expr_loc: Location.t; expr_typ: 'a}
@@ -69,6 +72,8 @@ and 'a expr_desc =
   | Const   of const
   | Funcall of string * 'a expr list
   | Ident   of string
+  | Access  of string * 'a expr list
+
   | Rev     of 'a expr
   | Plus    of 'a expr * 'a expr
   | Minus   of 'a expr * 'a expr

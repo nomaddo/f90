@@ -1,5 +1,8 @@
 OCAMLC=ocamlfind ocamlc ${LIB}
 OCAMLOPT=ocamlfind ocamlc ${LIB}
+OCAMLDEP=ocamlfind ocamldep
+OCAMLYACC=menhir
+
 LIB=-package sexplib,ppx_sexp_conv
 LLIB=
 
@@ -12,7 +15,7 @@ calc: ${OBJS}
 all: clean calc test
 
 depend:
-	ocamlfind ocamldep *.ml > .depend
+	$(OCAMLDEP) *.ml > .depend
 
 test:
 	for file in `find test -name *.f90 | sort`; do \
@@ -24,10 +27,10 @@ clean:
 	rm -rf *.cm? parser.ml parser.mli lexer.ml *.output
 
 parser.cmo: parser.ml parser.cmi
-	ocamlc -c $<
+	$(OCAMLC) -c $<
 
 parser.mli: parser.mly
-	menhir -v $<
+	$(OCAMLYACC) -v $<
 
 %.cmi: %.mli
 	${OCAMLC} -c ${LIB} ${OPT} $<

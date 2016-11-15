@@ -20,27 +20,32 @@ let dot_keyword_table =
 
 let keyword_table =
   mkhash [
-    "if", IF;
-    "then", THEN;
-    "else", ELSE;
-    "while", WHILE;
-    "case", CASE;
-    "select", SELECT;
-    "do", DO;
-    "program", PROGRAM;
-    "end", END;
-    "contains", CONTAINS;
-    "subroutine", SUBROUTINE;
-    "function", FUNCTION;
-    "dimension", DIMENSION;
-    "pointer", POINTER;
-    "parameter", PARAMETER;
-    "allocatable", ALLOCATABLE;
+    "if"          , IF;
+    "then"        , THEN;
+    "else"        , ELSE;
+    "while"       , WHILE;
+    "case"        , CASE;
+    "select"      , SELECT;
+    "do"          , DO;
+    "program"     , PROGRAM;
+    "end"         , END;
+    "contains"    , CONTAINS;
+    "subroutine"  , SUBROUTINE;
+    "function"    , FUNCTION;
+    "return"      , RETURN;
+    "dimension"   , DIMENSION;
+    "pointer"     , POINTER;
+    "parameter"   , PARAMETER;
+    "allocatable" , ALLOCATABLE;
 
-    "real", REAL;
-    "integer", INTEGER;
-    "complex", COMPLEX;
-    "logical", LOGICAL;
+    "real"        , REAL;
+    "integer"     , INTEGER;
+    "complex"     , COMPLEX;
+    "logical"     , LOGICAL;
+
+    "go"          , GO;
+    "to"          , TO;
+    "goto"        , GOTO;
   ]
 
 let loc = ref (-1, -1, -1)
@@ -80,7 +85,8 @@ let char = ['A'-'Z' 'a'-'z' '_' '0'-'9']
 
 rule token = parse
   [' ' '\t']        { incr line_chars; token lexbuf }     (* skip blanks *)
-| '\n'              { endline lexbuf;  token lexbuf }
+| '\n' (' '* '\n')* { update lexbuf; BR }
+| '\n'              { endline lexbuf;  BR }
 | ['0'-'9']+ as lxm { update lexbuf; INT (int_of_string lxm) }
 | ('0' | ['1'-'9'] ['0'-'9']*) '.' ['0'-'9']*
     as lxm { update lexbuf; FLOAT lxm }
