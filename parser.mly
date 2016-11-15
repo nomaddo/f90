@@ -1,10 +1,9 @@
-/* File parser.mly */
 %{
 open Parse_tree
 open Location
 
 let mkblock var decl =
-  {vardecls = List.rev var; decls = List.rev decl}
+  {vardecls = var; decls = decl}
 
 let mktyp ~loc typ_desc =
   { typ_desc; typ_loc = loc}
@@ -15,26 +14,37 @@ let mkvar_decl ?init ?kind typ ident =
   {vardecl_desc; vardecl_loc = loc}
 
 let mkkind ~loc kind =
-  {kind_desc=kind; kind_loc=loc}
+  {kind_desc = kind; kind_loc = loc}
 
 let mkexp ~loc exp =
-  {expr_loc = loc; expr_desc=exp}
+  {expr_loc = loc; expr_desc = exp; expr_typ = ()}
 
 let mkconst ~loc con =
   {const_desc = con; const_loc = loc}
 
 let mkdim_param ~loc param =
-  {dim_param_desc=param; dim_param_loc = loc}
+  {dim_param_desc = param; dim_param_loc = loc}
 
 let mkdecl ~loc dec =
   {decl_desc = dec; decl_loc = loc}
 
+let mkrange ~loc range_left range_right =
+  { range_left; range_right; range_loc = loc}
+
+let mkcase ~loc case_range  case_decls =
+  { case_range; case_decls; case_loc = loc }
+
+let mkselect ~loc select_expr select_cases =
+  { select_expr; select_cases; select_loc = loc }
 %}
 
 %token <int> INT
+%token <string> FLOAT
+%token TRUE FALSE
 %token PROGRAM
-%token DIMENSION POINTER
+%token DIMENSION POINTER ALLOCATABLE PARAMETER
 %token PLUS MINUS MUL DIV
+%token NOT AND OR EQ NEQ
 %token LPAREN RPAREN
 %token EOF
 %token <string> IDENT
@@ -43,21 +53,22 @@ let mkdecl ~loc dec =
 %token COLCOL
 %token IF THEN ELSE
 %token PRINT
-%token VAR EQ NEQ
+%token VAR EQV NEQV
 %token GREATER LESS GEQ LEQ
-%token REAL INTEGER
+%token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
 %token LBRACE RBRACE
+%token SELECT CASE
 
 %left PLUS MINUS        /* lowest precedence */
 %left MUL DIV           /* medium precedence */
 %left EQ GREATER GEQ LESS LEQ
+%left NOT AND OR EQV NEQV
 %nonassoc WHILE DO IF THEN ELSE
 %nonassoc LPAREN RPAREN LBRACE RBRACE
-%nonassoc IDENT INT
-%nonassoc SEMI
+%nonassoc IDENT INT FLOAT
 
 %start main             /* the entry point */
-%type <Parse_tree.block> main
+%type <unit Parse_tree.block> main
 
 %%
 
@@ -78,8 +89,11 @@ decl_var:
 | typ IDENT                          { mkvar_decl $1 $2 }
 
 typ:
-  INTEGER                            { mktyp ~loc:(mkloc ()) Integer }
-| REAL                               { mktyp ~loc:(mkloc ()) Real }
+  INTEGER                            { mktyp ~loc:(mkloc ()) Tinteger }
+| REAL                               { mktyp ~loc:(mkloc ()) Treal    }
+| COMPLEX                            { mktyp ~loc:(mkloc ()) Tcomplex }
+| LOGICAL                            { mktyp ~loc:(mkloc ()) Tlogical }
+| DOUBLE PRECISION                   { mktyp ~loc:(mkloc ()) Tdouble  }
 
 opt_kind:
   /* empty */                       { [] }
@@ -90,6 +104,10 @@ kind:
   { mkkind ~loc:(mkloc ()) Pointer }
 | DIMENSION LPAREN adecl seq_adecl RPAREN
   { mkkind ~loc:(mkloc ()) (Dimension ($3 :: $4)) }
+| ALLOCATABLE
+  { mkkind ~loc:(mkloc ()) Allocatable }
+| PARAMETER
+  { mkkind ~loc:(mkloc ()) Parameter }
 
 adecl:
 | exp   { mkdim_param ~loc:(mkloc ()) (Exp $1) }
@@ -103,25 +121,66 @@ seq_decl:
   /* empty */                       { [] }
 | decl seq_decl                     { $1 :: $2 }
 
+seq_exp:
+  /* empty */ { [] }
+| exp seq_exp  { $1 :: $2 }
+
+seq_case:
+| /* empty */   { [] }
+| case seq_case { $1 :: $2 }
+
+case:
+| CASE LPAREN range RPAREN seq_decl { mkcase ~loc:(mkloc ()) $3 $5 }
+
+range:
+| exp COLON exp { mkrange ~loc:(mkloc ()) (Some $1) (Some $3) }
+| COLON exp     { mkrange ~loc:(mkloc ()) None      (Some $2) }
+| exp COLON     { mkrange ~loc:(mkloc ()) (Some $1) None      }
+
 decl:
 | IDENT EQ exp
   { mkdecl ~loc:(mkloc ()) (Assign ($1, $3)) }
+| DO IDENT EQ exp COMMA exp COMMA exp seq_decl END DO
+  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, Some $8, $9))}
+| DO IDENT EQ exp COMMA exp seq_decl END DO
+  { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, None, $7))}
+| DO WHILE LPAREN exp RPAREN seq_decl END DO
+  { mkdecl ~loc:(mkloc ()) (While ($4, $6))}
+| SELECT CASE LPAREN exp RPAREN seq_case END SELECT
+  { mkdecl ~loc:(mkloc ()) (Select (mkselect ~loc:(mkloc ()) $4 $6)) }
 
 exp:
-  IDENT
+| const { mkexp ~loc:(mkloc ()) (Const $1) }
+| IDENT
   { mkexp ~loc:(mkloc ()) (Ident $1) }
-| INT
-  { mkexp ~loc:(mkloc ()) (Const (mkconst ~loc:(mkloc ()) (Int $1))) }
-| MINUS INT
-  { mkexp ~loc:(mkloc ()) (Const (mkconst ~loc:(mkloc ()) (Int (- $2)))) }
 | MINUS exp
   { mkexp ~loc:(mkloc ()) (Rev $2) }
 | arith
   { mkexp ~loc:(mkloc ()) $1 }
 | comp
   { mkexp ~loc:(mkloc ()) $1 }
+| logical
+  { mkexp ~loc:(mkloc ()) $1 }
 | LPAREN exp RPAREN
   { $2 }
+
+const:
+| TRUE
+  { mkconst ~loc:(mkloc ()) (Cbool true) }
+| FALSE
+  { mkconst ~loc:(mkloc ()) (Cbool false) }
+| INT
+  { mkconst ~loc:(mkloc ()) (Cint $1) }
+| FLOAT
+  { mkconst ~loc:(mkloc ()) (Creal $1) }
+
+
+logical:
+| NOT exp      { Not $2        }
+| exp AND exp  { And ($1, $3)  }
+| exp OR exp   { Or ($1, $3)   }
+| exp EQV exp  { Eqv ($1, $3)  }
+| exp NEQV exp { Neqv ($1, $3) }
 
 comp:
 | exp EQ exp                        { Eq ($1, $3) }

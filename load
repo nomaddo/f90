@@ -1,3 +1,6 @@
+#require "sexplib";;
+
+#load "location.cmo";;
 #load "parse_tree.cmo";;
 #load "parser.cmo";;
 #load "lexer.cmo";;

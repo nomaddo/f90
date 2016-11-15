@@ -7,20 +7,38 @@ let mkhash l =
   let h = Hashtbl.create (List.length l) in
   List.iter (fun (s, k) -> Hashtbl.add h s k) l; h
 
+let dot_keyword_table =
+  mkhash [
+    ".true."  , TRUE;
+    ".false." , FALSE;
+    ".not."   , NOT;
+    ".and."   , AND;
+    ".or."    , OR;
+    ".eqv."   , EQV;
+    ".neqv."  , NEQV;
+]
+
 let keyword_table =
   mkhash [
     "if", IF;
     "then", THEN;
     "else", ELSE;
     "while", WHILE;
+    "case", CASE;
+    "select", SELECT;
     "do", DO;
     "print", PRINT;
     "program", PROGRAM;
     "end", END;
     "dimension", DIMENSION;
     "pointer", POINTER;
+    "parameter", PARAMETER;
+    "allocatable", ALLOCATABLE;
+
     "real", REAL;
     "integer", INTEGER;
+    "complex", COMPLEX;
+    "logical", LOGICAL;
   ]
 
 let loc = ref (-1, -1, -1)
@@ -62,6 +80,8 @@ rule token = parse
   [' ' '\t']        { incr line_chars; token lexbuf }     (* skip blanks *)
 | '\n'              { endline lexbuf;  token lexbuf }
 | ['0'-'9']+ as lxm { update lexbuf; INT (int_of_string lxm) }
+| ('0' | ['1'-'9'] ['0'-'9']*) '.' ['0'-'9']*
+    as lxm { update lexbuf; FLOAT lxm }
 | '+'               { update lexbuf; PLUS }
 | '-'               { update lexbuf; MINUS }
 | '*'               { update lexbuf; MUL }
@@ -79,6 +99,14 @@ rule token = parse
 | '>'               { update lexbuf; GREATER }
 | '{'               { update lexbuf; LBRACE }
 | '}'               { update lexbuf; RBRACE }
+| '.' char * '.'    {
+  let s = Lexing.lexeme lexbuf in
+  update lexbuf;
+  try
+    Hashtbl.find dot_keyword_table s
+  with
+    Not_found -> failwith "dot_keyword_table"
+  }
 | head char *       {
     let s = Lexing.lexeme lexbuf in
     update lexbuf;

@@ -1,1 +1,1 @@
-../calc $1
+make -C ../ test
