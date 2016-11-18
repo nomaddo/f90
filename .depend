@@ -1,9 +1,7 @@
-a.cmo : location.cmo
-a.cmx : location.cmx
-calc.cmo : parser.cmi parse_tree.cmo
-calc.cmx : parser.cmx parse_tree.cmx
 location.cmo :
 location.cmx :
+main.cmo : parser.cmi parse_tree.cmo
+main.cmx : parser.cmx parse_tree.cmx
 parse_tree.cmo : location.cmo
 parse_tree.cmx : location.cmx
 parser.cmo : parse_tree.cmo location.cmo parser.cmi

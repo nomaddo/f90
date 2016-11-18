@@ -6,13 +6,13 @@ OCAMLYACC=menhir
 LIB=-package sexplib,ppx_sexp_conv
 LLIB=
 
-OBJS=location.cmo parse_tree.cmo parser.cmo lexer.cmo calc.cmo
+OBJS=location.cmo parse_tree.cmo parser.cmo lexer.cmo main.cmo
 OPT=-g
 
-calc: ${OBJS}
-	$(OCAMLC) ${LLIB} ${OPT} -linkpkg -linkall -o calc ${OBJS}
+f90: ${OBJS}
+	$(OCAMLC) ${LLIB} ${OPT} -linkpkg -linkall -o $@ ${OBJS}
 
-all: calc test
+all: f90 test
 
 depend:
 	$(OCAMLDEP) *.ml > .depend
@@ -20,7 +20,7 @@ depend:
 test:
 	for file in `find test -name *.f90 | sort`; do \
 	echo $${file} ":"; \
-	./calc $${file}; \
+	./f90 $${file}; \
 	done \
 
 clean:
