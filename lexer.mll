@@ -106,8 +106,6 @@ rule token = parse
 | ':'               { update lexbuf; COLON }
 | '<'               { update lexbuf; LESS }
 | '>'               { update lexbuf; GREATER }
-| '{'               { update lexbuf; LBRACE }
-| '}'               { update lexbuf; RBRACE }
 | '.' char * '.'    {
   let s = Lexing.lexeme lexbuf in
   update lexbuf;

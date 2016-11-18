@@ -12,7 +12,7 @@ OPT=-g
 calc: ${OBJS}
 	$(OCAMLC) ${LLIB} ${OPT} -linkpkg -linkall -o calc ${OBJS}
 
-all: clean calc test
+all: calc test
 
 depend:
 	$(OCAMLDEP) *.ml > .depend

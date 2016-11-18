@@ -63,10 +63,9 @@ let mkfunc ~loc ident args decls =
 %token COLCOL
 %token IF THEN ELSE
 %token CALL
-%token VAR EQV NEQV
+%token EQV NEQV
 %token GREATER LESS GEQ LEQ
 %token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
-%token LBRACE RBRACE
 %token SELECT CASE DEFAULT
 %token SUBROUTINE
 %token FUNCTION RETURN
@@ -76,9 +75,6 @@ let mkfunc ~loc ident args decls =
 %left MUL DIV           /* medium precedence */
 %left EQ GREATER GEQ LESS LEQ
 %left NOT AND OR EQV NEQV
-%nonassoc WHILE DO IF THEN ELSE
-%nonassoc LPAREN RPAREN LBRACE RBRACE
-%nonassoc IDENT INT FLOAT
 
 %start main             /* the entry point */
 %type <unit Parse_tree.main> main
@@ -209,6 +205,11 @@ decl:
   { mkdecl ~loc:(mkloc ()) (While ($4, $7))}
 | SELECT CASE LPAREN exp RPAREN br seq_case END SELECT ident_or_blank br
   { mkdecl ~loc:(mkloc ()) (Select (mkselect ~loc:(mkloc ()) $4 $7)) }
+| IF LPAREN exp RPAREN THEN br seq_decl END IF br
+  { mkdecl ~loc:(mkloc ()) (If ($3, $7, []))}
+| IF LPAREN exp RPAREN THEN br seq_decl ELSE br seq_decl END IF br
+  { mkdecl ~loc:(mkloc ()) (If ($3, $7, $10))}
+
 | RETURN exp br
   { mkdecl ~loc:(mkloc ()) (Return $2)}
 | INT decl
