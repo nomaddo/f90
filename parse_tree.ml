@@ -20,10 +20,10 @@ and 'a block =
   {vardecls: 'a vardecl list; decls: 'a decl list}
 
 and 'a vardecl =
-  {vardecl_desc: vardecl_desc; vardecl_loc: Location.t}
+  {vardecl_desc: 'a vardecl_desc; vardecl_loc: Location.t}
 
-and vardecl_desc =
-  {name: string; typ: typ; init: unit expr option; kind: kind list option}
+and 'a vardecl_desc =
+  {name: string; typ: typ; init: unit expr option; kind: 'a kind list option}
 
 and typ =
   {typ_desc: typ_desc; typ_loc: Location.t}
@@ -35,35 +35,36 @@ and typ_desc =
   | Tlogical
   | Tdouble
 
-and kind =
-  {kind_desc: kind_desc; kind_loc: Location.t}
+and 'a kind =
+  {kind_desc: 'a kind_desc; kind_loc: Location.t}
 
-and kind_desc =
+and 'a kind_desc =
   | Pointer
-  | Dimension of dim_param list
+  | Dimension of 'a dim_param list
   | Allocatable
   | Parameter
 
-and dim_param =
-  {dim_param_desc: dim_param_desc; dim_param_loc: Location.t}
+and 'a dim_param =
+  {dim_param_desc: 'a dim_param_desc; dim_param_loc: Location.t}
 
-and dim_param_desc =
+and 'a dim_param_desc =
   | Colon
-  | Exp of unit expr
+  | Exp of 'a expr
 
 and 'a decl =
   {decl_desc: 'a decl_desc; decl_loc:  Location.t}
 
 and 'a decl_desc =
-  | While   of 'a expr * 'a decl list
-  | If      of 'a expr * 'a decl list * 'a decl list
-  | Assign  of string * 'a expr
-  | Do      of string * 'a expr * 'a expr * 'a expr option * 'a decl list
-  | Select  of 'a select
-  | Call    of string * 'a expr list
-  | Return  of 'a expr
-  | Label   of int * 'a decl
-  | Goto    of int
+  | While    of 'a expr * 'a decl list
+  | If       of 'a expr * 'a decl list * 'a decl list
+  | Assign   of string * 'a expr
+  | Assign_a of string * 'a dim_param list * 'a expr
+  | Do       of string * 'a expr * 'a expr * 'a expr option * 'a decl list
+  | Select   of 'a select
+  | Call     of string * 'a expr list
+  | Return   of 'a expr
+  | Label    of int * 'a decl
+  | Goto     of int
 
 and 'a expr =
   {expr_desc: 'a expr_desc; expr_loc: Location.t; expr_typ: 'a}

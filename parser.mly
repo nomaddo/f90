@@ -144,8 +144,8 @@ opt_kind:
 kind:
   POINTER
   { mkkind ~loc:(mkloc ()) Pointer }
-| DIMENSION LPAREN adecl seq_adecl RPAREN
-  { mkkind ~loc:(mkloc ()) (Dimension ($3 :: $4)) }
+| DIMENSION LPAREN seq_adecl RPAREN
+  { mkkind ~loc:(mkloc ()) (Dimension $3) }
 | ALLOCATABLE
   { mkkind ~loc:(mkloc ()) Allocatable }
 | PARAMETER
@@ -156,11 +156,11 @@ adecl:
 | COLON { mkdim_param ~loc:(mkloc ()) Colon }
 
 seq_adecl:
-  /* empty */           { [] }
-| COMMA adecl seq_adecl { $2 :: $3 }
+| adecl                 { [$1] }
+| adecl COMMA seq_adecl { $1 :: $3 }
 
 seq_decl:
-  /* empty */                       { [] }
+| /* empty */                       { [] }
 | decl seq_decl                     { $1 :: $2 }
 
 seq_exp:
@@ -199,6 +199,8 @@ decl:
   { mkdecl ~loc:(mkloc ()) (Call ($2, $4)) }
 | IDENT EQ exp br
   { mkdecl ~loc:(mkloc ()) (Assign ($1, $3)) }
+| IDENT LPAREN seq_adecl RPAREN EQ exp br
+  { mkdecl ~loc:(mkloc ()) (Assign_a ($1, $3, $6))}
 | DO IDENT EQ exp COMMA exp COMMA exp br seq_decl END DO br
   { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, Some $8, $10))}
 | DO IDENT EQ exp COMMA exp br seq_decl END DO br
