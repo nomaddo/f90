@@ -84,8 +84,9 @@ let head = ['A'-'Z' 'a'-'z']
 let char = ['A'-'Z' 'a'-'z' '_' '0'-'9']
 
 rule token = parse
-  [' ' '\t']        { incr line_chars; token lexbuf }     (* skip blanks *)
-| '\n' (' '* '\n')* { update lexbuf; BR }
+  '!' [^ '\n'] * '\n' { endline lexbuf; update lexbuf; BR }
+| '&' ' ' * '\n'    { endline lexbuf; update lexbuf; token lexbuf }
+| [' ' '\t']        { incr line_chars; token lexbuf } (* skip blanks *)
 | '\n'              { endline lexbuf;  BR }
 | ['0'-'9']+ as lxm { update lexbuf; INT (int_of_string lxm) }
 | ('0' | ['1'-'9'] ['0'-'9']*) '.' ['0'-'9']*
