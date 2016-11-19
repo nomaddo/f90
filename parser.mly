@@ -68,7 +68,7 @@ let mkfunc ~loc ident args decls =
 %token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
 %token SELECT CASE DEFAULT
 %token SUBROUTINE
-%token FUNCTION RETURN
+%token FUNCTION RETURN STOP
 %token BR GO TO GOTO
 %token LBRACE RBRACE LPAREN_S S_RPAREN
 %left PLUS MINUS        /* lowest precedence */

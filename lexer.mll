@@ -16,6 +16,13 @@ let dot_keyword_table =
     ".or."    , OR;
     ".eqv."   , EQV;
     ".neqv."  , NEQV;
+
+    ".eq."    , EQ;
+    ".ne."    , NEQ;
+    ".lt."    , LESS;
+    ".le."    , LEQ
+    ".gt."    , GREATER;
+    ".ge."    , GEQ
 ]
 
 let keyword_table =
