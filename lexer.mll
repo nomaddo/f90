@@ -97,6 +97,10 @@ rule token = parse
 | '/'               { update lexbuf; DIV }
 | '('               { update lexbuf; LPAREN }
 | ')'               { update lexbuf; RPAREN }
+| '['               { update lexbuf; LBRACE }
+| ']'               { update lexbuf; RBRACE }
+| "(/"              { update lexbuf; LPAREN_S }
+| "/)"              { update lexbuf; S_RPAREN }
 | '='               { update lexbuf; EQ }
 | "::"              { update lexbuf; COLCOL }
 | "!="              { update lexbuf; NEQ }

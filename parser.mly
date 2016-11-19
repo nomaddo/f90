@@ -8,9 +8,9 @@ let mkblock var decl =
 let mktyp ~loc typ_desc =
   { typ_desc; typ_loc = loc}
 
-let mkvar_decl ?init ?kind typ ident =
+let mkvar_decl ?kind typ pairs =
   let loc = mkloc () in
-  let vardecl_desc = {name = ident; typ; init; kind} in
+  let vardecl_desc = {vars = pairs; typ; kind} in
   {vardecl_desc; vardecl_loc = loc}
 
 let mkkind ~loc kind =
@@ -70,7 +70,7 @@ let mkfunc ~loc ident args decls =
 %token SUBROUTINE
 %token FUNCTION RETURN
 %token BR GO TO GOTO
-
+%token LBRACE RBRACE LPAREN_S S_RPAREN
 %left PLUS MINUS        /* lowest precedence */
 %left MUL DIV           /* medium precedence */
 %left EQ GREATER GEQ LESS LEQ
@@ -122,16 +122,27 @@ seq_var:
 | decl_var seq_var                  { $1 :: $2 }
 
 decl_var:
-| typ opt_kind COLCOL IDENT EQ exp br { mkvar_decl $1 $4 ~kind:$2 ~init:$6 }
-| typ opt_kind COLCOL IDENT        br { mkvar_decl $1 $4 ~kind:$2 }
-| typ IDENT                        br { mkvar_decl $1 $2 }
+| typ opt_kind COLCOL seq_decl_assign br
+  { mkvar_decl $1 $4 ~kind:$2 }
+| typ seq_decl_assign br
+  { mkvar_decl $1 $2 }
+
+decl_assign:
+| IDENT        { ($1, None) }
+| IDENT EQ exp { ($1, Some $3) }
+
+seq_decl_assign:
+| decl_assign
+  { [$1] }
+| decl_assign COMMA seq_decl_assign
+  { $1 :: $3 }
 
 typ:
-  INTEGER                            { mktyp ~loc:(mkloc ()) Tinteger }
-| REAL                               { mktyp ~loc:(mkloc ()) Treal    }
-| COMPLEX                            { mktyp ~loc:(mkloc ()) Tcomplex }
-| LOGICAL                            { mktyp ~loc:(mkloc ()) Tlogical }
-| DOUBLE PRECISION                   { mktyp ~loc:(mkloc ()) Tdouble  }
+| INTEGER          { mktyp ~loc:(mkloc ()) Tinteger }
+| REAL             { mktyp ~loc:(mkloc ()) Treal    }
+| COMPLEX          { mktyp ~loc:(mkloc ()) Tcomplex }
+| LOGICAL          { mktyp ~loc:(mkloc ()) Tlogical }
+| DOUBLE PRECISION { mktyp ~loc:(mkloc ()) Tdouble  }
 
 opt_kind:
   /* empty */                       { [] }
@@ -148,11 +159,29 @@ kind:
   { mkkind ~loc:(mkloc ()) Parameter }
 
 adecl:
-| exp   { mkdim_param ~loc:(mkloc ()) (Exp $1) }
-| COLON { mkdim_param ~loc:(mkloc ()) Colon }
+| exp
+  { mkdim_param ~loc:(mkloc ()) (Exp $1) }
+| COLON
+  { mkdim_param ~loc:(mkloc ()) Default }
+| exp COLON exp
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (Some $1, Some $3, None)) }
+| exp COLON exp COLON exp
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (Some $1, Some $3, Some $5)) }
+| COLON exp
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (None, Some $2, None)) }
+| COLON exp COLON exp
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (None, Some $2, Some $4)) }
+| COLON COLON exp
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (None, None, Some $3)) }
 
 seq_adecl:
-| adecl                 { [$1] }
+| /* empty */           { []       }
+| adecl                 { [$1]     }
 | adecl COMMA seq_adecl { $1 :: $3 }
 
 seq_decl:
@@ -231,8 +260,12 @@ exp:
   { mkexp ~loc:(mkloc ()) $1 }
 | LPAREN exp RPAREN
   { $2 }
-| IDENT LPAREN seq_exp RPAREN
+| IDENT LPAREN seq_adecl RPAREN
   { mkexp ~loc:(mkloc ()) (Funcall ($1, $3)) }
+| LBRACE seq_exp RBRACE
+  { mkexp ~loc:(mkloc ()) (Array $2)}
+| LPAREN_S seq_exp S_RPAREN
+  { mkexp ~loc:(mkloc ()) (Array $2)}
 
 simple_exp:
 | const

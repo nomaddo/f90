@@ -12,7 +12,7 @@ OPT=-g
 f90: ${OBJS}
 	$(OCAMLC) ${LLIB} ${OPT} -linkpkg -linkall -o $@ ${OBJS}
 
-all: f90 test
+all: clean f90 test
 
 depend:
 	$(OCAMLDEP) *.ml > .depend

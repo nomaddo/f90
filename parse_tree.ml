@@ -23,7 +23,7 @@ and 'a vardecl =
   {vardecl_desc: 'a vardecl_desc; vardecl_loc: Location.t}
 
 and 'a vardecl_desc =
-  {name: string; typ: typ; init: unit expr option; kind: 'a kind list option}
+  {vars: (string * 'a expr option) list; typ: typ; kind: 'a kind list option}
 
 and typ =
   {typ_desc: typ_desc; typ_loc: Location.t}
@@ -48,8 +48,9 @@ and 'a dim_param =
   {dim_param_desc: 'a dim_param_desc; dim_param_loc: Location.t}
 
 and 'a dim_param_desc =
-  | Colon
-  | Exp of 'a expr
+  | Default
+  | Colon of 'a expr option * 'a expr option * 'a expr option
+  | Exp   of 'a expr
 
 and 'a decl =
   {decl_desc: 'a decl_desc; decl_loc:  Location.t}
@@ -71,9 +72,11 @@ and 'a expr =
 
 and 'a expr_desc =
   | Const   of const
-  | Funcall of string * 'a expr list
+  | Funcall of string * 'a dim_param list
   | Ident   of string
-  | Access  of string * 'a expr list
+  | Access  of string * 'a dim_param list
+
+  | Array    of 'a expr list
 
   | Rev     of 'a expr
   | Plus    of 'a expr * 'a expr
