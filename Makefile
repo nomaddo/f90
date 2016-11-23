@@ -10,7 +10,7 @@ OBJS=location.cmo parse_tree.cmo parser.cmo lexer.cmo main.cmo
 OPT=-g
 
 f90: ${OBJS}
-	$(OCAMLC) ${LLIB} ${OPT} -linkpkg -linkall -o $@ ${OBJS}
+	$(OCAMLC) ${LLIB} ${OPT} -w -A -linkpkg -linkall -o $@ ${OBJS}
 
 all: clean f90 test
 

@@ -64,7 +64,7 @@ let mkfunc ~loc ident args decls =
 %token IF THEN ELSE
 %token CALL
 %token EQV NEQV
-%token GREATER LESS GEQ LEQ
+%token GREATER LESS GEQ LEQ EQEQ
 %token REAL INTEGER LOGICAL COMPLEX DOUBLE PRECISION
 %token SELECT CASE DEFAULT
 %token SUBROUTINE
@@ -219,13 +219,23 @@ range:
 | simple_exp COLON
   { mkrange ~loc:(mkloc ()) (Some $1) None      }
 
-decl:
+one_line_decl:
 | CALL IDENT LPAREN seq_exp RPAREN br
   { mkdecl ~loc:(mkloc ()) (Call ($2, $4)) }
 | IDENT EQ exp br
   { mkdecl ~loc:(mkloc ()) (Assign ($1, $3)) }
 | IDENT LPAREN seq_adecl RPAREN EQ exp br
   { mkdecl ~loc:(mkloc ()) (Assign_a ($1, $3, $6))}
+| RETURN exp br
+  { mkdecl ~loc:(mkloc ()) (Return $2)}
+| STOP br
+  { mkdecl ~loc:(mkloc ()) Stop}
+| GO TO INT br
+  { mkdecl ~loc:(mkloc ()) (Goto $3)}
+| GOTO INT br
+  { mkdecl ~loc:(mkloc ()) (Goto $2)}
+
+decl:
 | DO IDENT EQ exp COMMA exp COMMA exp br seq_decl END DO br
   { mkdecl ~loc:(mkloc ()) (Do ($2, $4, $6, Some $8, $10))}
 | DO IDENT EQ exp COMMA exp br seq_decl END DO br
@@ -238,15 +248,12 @@ decl:
   { mkdecl ~loc:(mkloc ()) (If ($3, $7, []))}
 | IF LPAREN exp RPAREN THEN br seq_decl ELSE br seq_decl END IF br
   { mkdecl ~loc:(mkloc ()) (If ($3, $7, $10))}
-
-| RETURN exp br
-  { mkdecl ~loc:(mkloc ()) (Return $2)}
+| IF LPAREN exp RPAREN one_line_decl
+  { mkdecl ~loc:(mkloc ()) (If ($3, [$5], []))}
+| one_line_decl
+  { $1 }
 | INT decl
   { mkdecl ~loc:(mkloc ()) (Label ($1, $2))}
-| GO TO INT br
-  { mkdecl ~loc:(mkloc ()) (Goto $3)}
-| GOTO INT br
-  { mkdecl ~loc:(mkloc ()) (Goto $2)}
 
 exp:
 | simple_exp { $1 }
@@ -291,7 +298,7 @@ logical:
 | exp NEQV exp { Neqv ($1, $3) }
 
 comp:
-| exp EQ exp                        { Eq ($1, $3) }
+| exp EQEQ exp                      { Eq ($1, $3) }
 | exp GREATER exp                   { Less ($3, $1) }
 | exp GEQ exp                       { Leq ($3, $1) }
 | exp LESS exp                      { Less ($1, $3) }

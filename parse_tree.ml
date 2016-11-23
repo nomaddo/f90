@@ -64,6 +64,7 @@ and 'a decl_desc =
   | Select   of 'a select
   | Call     of string * 'a expr list
   | Return   of 'a expr
+  | Stop
   | Label    of int * 'a decl
   | Goto     of int
 

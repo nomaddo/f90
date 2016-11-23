@@ -17,12 +17,12 @@ let dot_keyword_table =
     ".eqv."   , EQV;
     ".neqv."  , NEQV;
 
-    ".eq."    , EQ;
+    ".eq."    , EQEQ;
     ".ne."    , NEQ;
     ".lt."    , LESS;
-    ".le."    , LEQ
+    ".le."    , LEQ;
     ".gt."    , GREATER;
-    ".ge."    , GEQ
+    ".ge."    , GEQ;
 ]
 
 let keyword_table =
@@ -40,6 +40,7 @@ let keyword_table =
     "subroutine"  , SUBROUTINE;
     "function"    , FUNCTION;
     "return"      , RETURN;
+    "stop"        , STOP;
     "dimension"   , DIMENSION;
     "pointer"     , POINTER;
     "parameter"   , PARAMETER;
@@ -108,6 +109,7 @@ rule token = parse
 | ']'               { update lexbuf; RBRACE }
 | "(/"              { update lexbuf; LPAREN_S }
 | "/)"              { update lexbuf; S_RPAREN }
+| "=="              { update lexbuf; EQEQ }
 | '='               { update lexbuf; EQ }
 | "::"              { update lexbuf; COLCOL }
 | "!="              { update lexbuf; NEQ }
