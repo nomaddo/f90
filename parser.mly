@@ -8,13 +8,16 @@ let mkblock var decl =
 let mktyp ~loc typ_desc =
   { typ_desc; typ_loc = loc}
 
-let mkvar_decl ?kind typ pairs =
-  let loc = mkloc () in
-  let vardecl_desc = {vars = pairs; typ; kind} in
-  {vardecl_desc; vardecl_loc = loc}
-
 let mkkind ~loc kind =
   {kind_desc = kind; kind_loc = loc}
+
+let mkvar_decl ~kind typ pairs =
+  List.map (fun (var, dim, init, loc) ->
+    let kind =
+      begin match dim with
+      | None -> kind
+      | Some a -> mkkind ~loc (Dimension a) :: kind end in
+    {vardecl_desc = {var; init; kind; typ}; vardecl_loc = loc}) pairs
 
 let mkexp ~loc exp =
   {expr_loc = loc; expr_desc = exp; expr_typ = ()}
@@ -71,6 +74,7 @@ let mkfunc ~loc ident args decls =
 %token FUNCTION RETURN STOP
 %token BR GO TO GOTO
 %token LBRACE RBRACE LPAREN_S S_RPAREN
+%token COMMENT
 %left PLUS MINUS        /* lowest precedence */
 %left MUL DIV           /* medium precedence */
 %left EQ GREATER GEQ LESS LEQ
@@ -119,17 +123,19 @@ top_block:
 
 seq_var:
   /* empty */                       { [] }
-| decl_var seq_var                  { $1 :: $2 }
+| decl_var seq_var                  { $1 @ $2 }
 
 decl_var:
 | typ opt_kind COLCOL seq_decl_assign br
   { mkvar_decl $1 $4 ~kind:$2 }
 | typ seq_decl_assign br
-  { mkvar_decl $1 $2 }
+  { mkvar_decl $1 $2 ~kind:[] }
 
 decl_assign:
-| IDENT        { ($1, None) }
-| IDENT EQ exp { ($1, Some $3) }
+| IDENT        { ($1, None, None, mkloc ()) }
+| IDENT EQ exp { ($1, None, Some $3, mkloc ()) }
+| IDENT LPAREN seq_adecl RPAREN { ($1, Some $3, None, mkloc ())}
+| IDENT LPAREN seq_adecl RPAREN EQ exp { ($1, Some $3, Some $6, mkloc ())}
 
 seq_decl_assign:
 | decl_assign
@@ -178,6 +184,9 @@ adecl:
 | COLON COLON exp
   { mkdim_param ~loc:(mkloc ())
     (Colon (None, None, Some $3)) }
+| COLCOL exp /* XXX duplication */
+  { mkdim_param ~loc:(mkloc ())
+    (Colon (None, None, Some $2)) }
 
 seq_adecl:
 | /* empty */           { []       }
@@ -189,7 +198,7 @@ seq_decl:
 | decl seq_decl                     { $1 :: $2 }
 
 seq_exp:
-  /* empty */        { [] }
+| /* empty */        { [] }
 | exp                { [$1] }
 | exp COMMA seq_exp  { $1 :: $3 }
 

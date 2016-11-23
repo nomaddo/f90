@@ -39,6 +39,7 @@ let keyword_table =
     "contains"    , CONTAINS;
     "subroutine"  , SUBROUTINE;
     "function"    , FUNCTION;
+    "call"        , CALL;
     "return"      , RETURN;
     "stop"        , STOP;
     "dimension"   , DIMENSION;

@@ -4,5 +4,5 @@ program test
 contains
   function f ()
     return 13
-  end function
+  end function f
 end program test

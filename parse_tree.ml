@@ -23,7 +23,7 @@ and 'a vardecl =
   {vardecl_desc: 'a vardecl_desc; vardecl_loc: Location.t}
 
 and 'a vardecl_desc =
-  {vars: (string * 'a expr option) list; typ: typ; kind: 'a kind list option}
+  {var: string; init: 'a expr option; typ: typ; kind: 'a kind list}
 
 and typ =
   {typ_desc: typ_desc; typ_loc: Location.t}
